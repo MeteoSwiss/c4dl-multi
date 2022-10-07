@@ -22,7 +22,7 @@ Download the NetCDF file. You can place it in the `data` directory but elsewhere
 
 # Pretrained models
 
-The pretrained models are available at TODO. Unzip the zip files found there to the `models` directory.
+The pretrained models are available at https://doi.org/10.5281/zenodo.7157986. Unzip the files `models-*.zip` found there to the `models` directory and `results.zip` to the `results` directory..
 
 # Running
 
