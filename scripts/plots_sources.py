@@ -142,6 +142,7 @@ def plot_examples(
         model = tf.keras.Model(inputs=ip, outputs=pred)
 
         rr = 10**Y[0].astype(np.float32)
+        rr = rr.mean(axis=1, keepdims=True)
         sig = np.sqrt(np.log(0.33**2+1))
         mu = np.log(rr) - 0.5*sig**2
         Y[0] = norm.sf(1.0, loc=mu, scale=sig)
