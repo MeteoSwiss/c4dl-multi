@@ -118,10 +118,10 @@ def shapley_leadtime_plots(out_file=None):
 def plot_examples(
     batch_gen, model, batch_number=13,
     batch_member=30, out_file=None, 
-    shown_inputs=("RZC", "occurrence-8-10", "HRV", "ctth-alti"),
-    input_names=("Rain rate", "Lightning", "HRV", "CTH"),
+    shown_inputs=("RZC", "occurrence-8-10", "HRV [K]", "ctth-alti"),
+    input_names=("Rain rate [mm h$^{-1}$]", "Lightning", "HRV [K]", "CTH"),
     shown_future_inputs=("CAPE-MU-future",),
-    future_input_names=("CAPE-MU",),
+    future_input_names=("CAPE-MU [kJ$\,$kg$^{-1}$]",),
     preprocess_rain=False,
     plot_kwargs=None
 ):
@@ -175,8 +175,8 @@ def plot_all_examples():
     plot_examples(
         batch_gen, calib_model, 
         batch_number=sample[0], batch_member=sample[1],
-        shown_inputs=("RZC", "occurrence-8-10", "HRV", "ctth-alti"),
-        input_names=("Rain rate", "Lightning", "HRV", "CTH"),
+        shown_inputs=("RZC", "occurrence-8-10", "HRV"),
+        input_names=("Rain rate [mm h$^{-1}$]", "Lightning", "HRV [K]"),
         out_file="../figures/sample-lightning.pdf"
     )
 
@@ -188,8 +188,8 @@ def plot_all_examples():
     plot_examples(
         batch_gen, model, 
         batch_number=sample[0], batch_member=sample[1],
-        shown_inputs=("RZC", "BZC", "HRV", "ctth-alti"),
-        input_names=("Rain rate", "POH", "HRV", "CTH"),
+        shown_inputs=("RZC", "BZC", "HRV"),
+        input_names=("Rain rate [mm h$^{-1}$]", "POH", "HRV [K]"),
         plot_kwargs={"min_p": 5e-5},
         out_file="../figures/sample-hail.pdf"
     )
@@ -202,8 +202,8 @@ def plot_all_examples():
     plot_examples(
         batch_gen, model, 
         batch_number=sample[0], batch_member=sample[1],
-        shown_inputs=("HRV", "RZC", "ctth-alti"),
-        input_names=("HRV", "Rain rate", "CTH"),
+        shown_inputs=("HRV", "RZC"),
+        input_names=("HRV [K]", "Rain rate [mm h$^{-1}$]"),
         plot_kwargs={"min_p": 5e-4, "output_timesteps": [0]},
         preprocess_rain=True,
         out_file="../figures/sample-rain.pdf"

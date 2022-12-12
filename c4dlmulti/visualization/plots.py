@@ -20,7 +20,7 @@ transform_TB = lambda x: x*10+250
 transform_radiance = lambda x: x*100
 transform_T = lambda x: x*7.2+290
 input_transforms = {
-    "Rain rate": lambda x: 10**(x*0.528-0.051),
+    "Rain rate [mm h$^{-1}$]": lambda x: 10**(x*0.528-0.051),
     "CZC": lambda x: x*8.71+21.3,
     "EZC-20": lambda x: x*1.97,
     "EZC-45": lambda x: x*1.97,
@@ -31,9 +31,9 @@ input_transforms = {
     "Current dens.": lambda x: 10**(x*0.731-0.0718),
     "POH": lambda x: x,
     "$R > 10\\mathrm{mm\\,h^{-1}}$": lambda x: x,
-    "HRV": lambda x: x*100,
+    "HRV [K]": lambda x: x*100,
     "CTH": lambda x: x*2.810+5.260,
-    "CAPE-MU": lambda x: x*0.2,
+    "CAPE-MU [kJ$\,$kg$^{-1}$]": lambda x: x*0.2,
     "CIN-MU": lambda x: x*21,
     "LCL": lambda x: x*1000,
     "MCONV": lambda x: x*3.8,
@@ -61,25 +61,25 @@ input_transforms = {
     "Solar zen. ang.": lambda x: x * 127
 }
 input_norm = {
-    "Rain rate": colors.LogNorm(0.01, 100, clip=True),
+    "Rain rate [mm h$^{-1}$]": colors.LogNorm(0.01, 100, clip=True),
     "LZC": colors.LogNorm(0.75, 100, clip=True),
     "Light. dens.": colors.LogNorm(0.01, 100, clip=True),
     "Current dens.": colors.LogNorm(0.01, 100, clip=True),
     "Lightning": colors.Normalize(0, 1),
     "POH": colors.Normalize(0, 1),
     "$R > 10\\mathrm{mm\\,h^{-1}}$": colors.Normalize(0, 1),
-    "HRV": colors.Normalize(0,100),
+    "HRV [K]": colors.Normalize(0,100),
     "CTH": colors.Normalize(0,12),
-    "CAPE-MU": colors.Normalize(0,2)
+    "CAPE-MU [kJ$\,$kg$^{-1}$]": colors.Normalize(0,2)
 }
 input_ticks = {
-    "Rain rate": [0.1, 1, 10, 100],
+    "Rain rate [mm h$^{-1}$]": [0.1, 1, 10, 100],
     "Lightning": [0, 0.5, 1],
     "POH": [0, 0.5, 1],
     "$R > 10\\mathrm{mm\\,h^{-1}}$": [0, 0.5, 1],
-    "HRV": [0, 25, 50, 75],
+    "HRV [K]": [0, 25, 50, 75],
     "CTH": [0, 5, 10],
-    "CAPE-MU": [0.5, 1, 1.5, 2],
+    "CAPE-MU [kJ$\,$kg$^{-1}$]": [0.5, 1, 1.5, 2],
 }
 
 
