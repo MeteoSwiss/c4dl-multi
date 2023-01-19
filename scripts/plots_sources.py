@@ -5,7 +5,7 @@ import numpy as np
 from scipy.stats import norm
 import tensorflow as tf
 
-from c4dlmulti.analysis import calibration, shapley
+from c4dlmulti.analysis import calibration, evaluation, shapley
 from c4dlmulti.visualization import plots
 
 import training
@@ -13,7 +13,7 @@ import training
 
 def exclusion_plot(prefix="lightning", out_file=None, fig=None, axes=None):
     scores = shapley.load_scores(
-        f"/scratch/jleinone/c4dl/results/{prefix}/test/",
+        f"../results/{prefix}/test/",
         prefix=prefix
     )
     scores_norm = {s: v/scores[''] for (s,v) in scores.items()}
@@ -28,7 +28,7 @@ def exclusion_plot(prefix="lightning", out_file=None, fig=None, axes=None):
 def exclusion_plot_all(prefixes=("lightning", "hail", "rain"), out_file=None):
     scores = {
         p: shapley.load_scores(
-            f"/scratch/jleinone/c4dl/results/{p}/test/",
+            f"../results/{p}/test/",
             prefix=p
         )
         for p in prefixes
@@ -208,3 +208,63 @@ def plot_all_examples():
         preprocess_rain=True,
         out_file="../figures/sample-rain.pdf"
     )
+
+
+def plot_metrics_leadtime(
+    metric=evaluation.intersection_over_union,
+    prefixes=("lightning", "hail"), metric_name="CSI",
+    sources_str="rlsnd", step_minutes=5,
+    out_fn=None
+):
+    fig = plt.figure()
+    ax = fig.add_subplot()
+
+    for p in prefixes:
+        fn = f"../results/{p}/test/conf_matrix_leadtime-{p}-{sources_str}.npy"
+        conf_matrix = np.load(fn)
+        m = metric(conf_matrix)
+        if m.ndim > 1:
+            m = m.max(axis=0)
+        x = np.arange(1, len(m)+1) * step_minutes
+        label = p.capitalize()
+        ax.plot(x, m, label=label)
+
+    ax.legend()
+    ax.set_xlim((0, x[-1]))
+    ax.set_ylim((0, ax.get_ylim()[1]))
+    ax.set_xlabel("Lead time [min]")
+    ax.set_ylabel(metric_name)
+
+    if out_fn is not None:
+        fig.savefig(out_fn, bbox_inches='tight')
+
+    plt.close(fig)
+
+metrics = [
+    ("CSI", evaluation.intersection_over_union),
+    ("ETS", evaluation.equitable_threat_score),
+    ("HSS", evaluation.heidke_skill_score),
+    ("PSS", evaluation.peirce_skill_score),
+    ("ROC AUC", evaluation.roc_area_under_curve),
+    ("PR AUC", evaluation.pr_area_under_curve),
+]
+def plot_metrics_leadtime_all():
+    for (metric_name, metric) in metrics:
+        fn_metric_name = metric_name.replace(" ", "_")
+        fn = f"../figures/{fn_metric_name}-leadtime.pdf"
+        plot_metrics_leadtime(metric, metric_name=metric_name, out_fn=fn)
+
+
+def rain_metrics_table(thresholds=(10,30,50), sources_str="rlsnd", ):
+    for (metric_name, metric) in metrics:
+        print(metric_name, end=' ')
+        for t in thresholds:
+            fn = "../results/rain/test/" + \
+                f"conf_matrix_leadtime-rain{t}-{sources_str}.npy"
+            conf_matrix = np.load(fn)
+            m = metric(conf_matrix)
+            if m.ndim > 1:
+                m = m.max(axis=0)
+            m = m[0]
+            print(f"{m:.3f}", end=' ')
+        print()

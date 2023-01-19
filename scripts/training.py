@@ -601,6 +601,46 @@ def eval_sources(sources_str, target="occurrence-8-10", fn_prefix="lightning",
         np.savetxt(eval_fn, eval_result, delimiter=',', fmt='%.6e')
 
 
+def conf_matrix(
+    sources_str, target="occurrence-8-10", fn_prefix="lightning",
+    dataset="test"
+):
+    if sources_str in ("", "null"):
+        sources_str = ""
+        sources_suffix = "null"
+    else:
+        sources_suffix = sources_str
+    (sources_str, batch_gen, model, strategy) = model_sources(
+        sources_str, target=target)
+    
+    weight_fn = os.path.join("../models/", fn_prefix, f"{fn_prefix}-{sources_suffix}.h5")
+    model.load_weights(weight_fn)
+    result_dir = os.path.join("../results/", fn_prefix, dataset)
+    
+    thresholds = np.linspace(0, 1, 101)
+    if fn_prefix == "rain":
+        num_leadtimes = 1
+        rain_thresh = [(1,10), (2,30), (3,50)]
+        for rt in rain_thresh:
+            conf_matrix = evaluation.conf_matrix_leadtimes(
+                model, batch_gen, dataset=dataset,
+                thresholds=thresholds, num_leadtimes=num_leadtimes,
+                target=fn_prefix, rain_thresh=rt
+            )
+            cm_fn = os.path.join(result_dir,
+                f"conf_matrix_leadtime-{fn_prefix}{rt[1]}-{sources_str}.npy")
+            np.save(cm_fn, conf_matrix)
+    else:
+        num_leadtimes = 12
+        conf_matrix = evaluation.conf_matrix_leadtimes(
+            model, batch_gen, dataset=dataset,
+            thresholds=thresholds, num_leadtimes=num_leadtimes,
+            target=fn_prefix
+        )
+        cm_fn = os.path.join(result_dir,
+            f"conf_matrix_leadtime-{fn_prefix}-{sources_str}.npy")
+        np.save(cm_fn, conf_matrix)        
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -634,6 +674,11 @@ def main():
         fn_prefix = args.prefix
         eval_sources(sources_str, target=target, fn_prefix=fn_prefix,
             separate_leadtimes=True)
+    elif "conf_matrix":
+        sources_str = args.sources
+        target = args.target
+        fn_prefix = args.prefix
+        conf_matrix(sources_str, target=target, fn_prefix=fn_prefix)
 
 
 if __name__ == "__main__":

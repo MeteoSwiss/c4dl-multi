@@ -90,16 +90,12 @@ def rnn_model(
     dropout=0,
     norm=None,
     last_only=False,
-    final_activation='sigmoid'
+    final_activation='sigmoid',
+    block_channels=(32, 64, 128) # number of channels by depth
 ):
     (inputs, inputs_by_shape) = create_inputs(input_specs,
         base_shape=base_shape, past_timesteps=past_timesteps,
         future_timesteps=future_timesteps)
-
-    # number of channels by depth
-    #block_channels = [32, 64, 128, 256]
-    block_channels = [32, 64, 128]    
-    #block_channels = [24, 48, 96]
 
     # recurrent downsampling 
     xt_by_time = {}
@@ -117,7 +113,7 @@ def rnn_model(
             # merge different resolutions when possible
             s = 2**i
             if (i > 0) and s in inputs_by_shape[timeframe]:
-                if 1 in xt:                
+                if 1 in xt:
                     xt[1] = Concatenate(axis=-1)([xt[1],xt[s]])
                 else:
                     xt[1] = xt[s]
@@ -131,10 +127,10 @@ def rnn_model(
                 initial_state = Lambda(lambda y: tf.zeros_like(y[:,0,...]))(xt[s])
                 # TODO: future steps should iterate backwards in time?
                 
-                xt[s] = ResGRU(                
+                xt[s] = ResGRU(
                     channels, return_sequences=True,
                     time_steps=past_timesteps if timeframe=="past" else future_timesteps,
-                )([xt[s],initial_state])                
+                )([xt[s],initial_state])
 
             if timeframe == "past":
                 intermediate.append(ConvBlock(channels)(xt[1][:,-1,...]))
@@ -153,9 +149,9 @@ def rnn_model(
         ))(xt_by_time["past"])
 
     for (i,channels) in reversed(list(enumerate(block_channels))):
-        xt = ResGRU(        
+        xt = ResGRU(
             channels, return_sequences=True, time_steps=future_timesteps
-        )([xt,intermediate[i]])        
+        )([xt,intermediate[i]])
         xt = TimeDistributed(UpSampling2D(interpolation='bilinear'))(xt)
         xt = ResBlock(block_channels[max(i-1,0)], time_dist=True,
             dropout=dropout, norm=norm)(xt)
@@ -201,7 +197,7 @@ def persistence_model(
 
 def ensemble_model(models, weights=None):
     N = len(models)
-    if weights is None:        
+    if weights is None:
         weights = [1/N]*N
     inputs = models[0].inputs
     weighted_outputs = [w*m(inputs) for (w,m) in zip(weights, models)]
@@ -217,7 +213,7 @@ def iou_metric(y_true, y_pred, smooth=1e-6): # this is the same as critical succ
     y_true = tf.cast(y_true, tf.float32)
     y_pred = tf.math.round(y_pred)
     intersection = tf.math.reduce_mean(y_true * y_pred)
-    total = tf.math.reduce_mean(y_true + y_pred)    
+    total = tf.math.reduce_mean(y_true + y_pred)
     union = total - intersection
     return intersection / (union + smooth)
 
@@ -226,7 +222,7 @@ def iou_metric(y_true, y_pred, smooth=1e-6): # this is the same as critical succ
 def iou_loss(y_true, y_pred, smooth=1e-6): # this is the same as critical success index
     y_true = tf.cast(y_true, tf.float32)
     intersection = tf.math.reduce_mean(y_true * y_pred)
-    total = tf.math.reduce_mean(y_true + y_pred)    
+    total = tf.math.reduce_mean(y_true + y_pred)
     union = total - intersection
     return 1.0 - intersection / (union + smooth)
 

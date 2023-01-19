@@ -4,6 +4,7 @@ import os
 
 import numpy as np
 from scipy.integrate import trapezoid
+from scipy.stats import norm
 
 try:
     from ..features import batch
@@ -54,7 +55,7 @@ def conf_matrix_models(model, batch_gen, weight_files, out_dir, dataset='valid')
 
 
 def conf_matrix_leadtimes(model, batch_gen, dataset='valid', thresholds=[0.5],
-    num_leadtimes=12):
+    num_leadtimes=12, target="lightning", rain_thresh=(1,10)):
 
     batch_seq = batch.BatchSequence(batch_gen, dataset=dataset)
     shape = (len(thresholds), num_leadtimes)
@@ -62,6 +63,7 @@ def conf_matrix_leadtimes(model, batch_gen, dataset='valid', thresholds=[0.5],
     fp = np.zeros(shape, dtype=np.uint64)
     fn = np.zeros(shape, dtype=np.uint64)
     num_threads = multiprocessing.cpu_count()
+    log_rain_thresh = np.log(rain_thresh[1])
 
     def acc(Y_pred, Y, i, t, threshold):
         Y_pred_thresh = (Y_pred >= threshold)
@@ -69,20 +71,31 @@ def conf_matrix_leadtimes(model, batch_gen, dataset='valid', thresholds=[0.5],
         fp[i,t] += np.count_nonzero(Y_pred_thresh & ~Y)
         fn[i,t] += np.count_nonzero(~Y_pred_thresh & Y)
 
-    for i in range(len(batch_seq)):
-        print("{}/{}".format(i,len(batch_seq)))
-        (X,Y) = batch_seq[i]
+    for k in range(len(batch_seq)):
+        print("{}/{}".format(k,len(batch_seq)))
+        (X,Y) = batch_seq[k]
         Y_pred = model.predict(X)
-        Y = Y[0].astype(bool)
-        
+        Y = Y[0]
+
+        if target == "rain":
+            rr = 10**Y.astype(np.float32)
+            rr = rr.mean(axis=1, keepdims=True)
+            sig = np.sqrt(np.log(0.33**2+1))
+            mu = np.log(rr) - 0.5*sig**2
+            Y = norm.sf(log_rain_thresh, loc=mu, scale=sig)
+            Y_pred = Y_pred[...,rain_thresh[0]:].sum(axis=-1, keepdims=True)
+            Y_pred = np.expand_dims(Y_pred, axis=1)
+            
+        Y = (Y >= 0.5)
+
         with concurrent.futures.ThreadPoolExecutor(num_threads) as executor:            
             for (i,threshold) in enumerate(thresholds):
-                for t in range(num_leadtimes):
-                    executor.submit(acc, 
+                for t in range(num_leadtimes):                    
+                    executor.submit(acc,
                         Y_pred[:,t,...], Y[:,t,...], i, t, threshold
                     )
 
-    N = len(batch_seq) * Y_pred.shape[0] * np.prod(Y_pred.shape[2:])
+    N = len(batch_seq) * Y_pred.shape[0] * np.prod(Y_pred.shape[-3:-1])
     tn = N - tp - fp - fn
 
     return np.array(((tp, fn), (fp, tn))) / N
@@ -126,6 +139,11 @@ def heidke_skill_score(conf_matrix):
 
 
 def roc_area_under_curve(conf_matrix):
+    if conf_matrix.ndim == 4:
+        cm = conf_matrix
+        auc = [roc_area_under_curve(cm[...,i]) for i in range(cm.shape[-1])]
+        return np.stack(auc, axis=-1)
+
     ((tp, fn), (fp, tn)) = conf_matrix
     tpr = tp / (tp + fn)
     fpr = fp / (fp + tn)
@@ -135,6 +153,11 @@ def roc_area_under_curve(conf_matrix):
 
 
 def pr_area_under_curve(conf_matrix):
+    if conf_matrix.ndim == 4:
+        cm = conf_matrix
+        auc = [pr_area_under_curve(cm[...,i]) for i in range(cm.shape[-1])]
+        return np.stack(auc, axis=-1)
+
     prec = precision(conf_matrix)
     rec = recall(conf_matrix)
 
