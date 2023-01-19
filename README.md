@@ -16,9 +16,7 @@ if you just want to run it.
 
 # Downloading data
 
-The dataset can be found at the following Zenodo repository: https://doi.org/10.5281/zenodo.6325370.
-
-Download the NetCDF file. You can place it in the `data` directory but elsewhere on the disk works too.
+The dataset can be found at the following Zenodo repositories: https://doi.org/10.5281/zenodo.6325370 and https://doi.org/10.5281/zenodo.7157986. Follow the instructions there on where to place the data.
 
 # Pretrained models
 
