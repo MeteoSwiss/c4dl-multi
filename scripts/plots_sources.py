@@ -145,7 +145,7 @@ def plot_examples(
         rr = rr.mean(axis=1, keepdims=True)
         sig = np.sqrt(np.log(0.33**2+1))
         mu = np.log(rr) - 0.5*sig**2
-        Y[0] = norm.sf(1.0, loc=mu, scale=sig)
+        Y[0] = norm.sf(np.log(10.0), loc=mu, scale=sig)
 
     fig = plots.plot_model_examples(X, Y, future_input_codes+["obs", model],
         batch_member=batch_member, shown_inputs=shown_inputs,        
